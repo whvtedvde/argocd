@@ -1,0 +1,89 @@
+{
+  "helmdocs": {
+    "valueFile": "helmdocs-values.yaml",
+    "readmeTemplateFile": "README.md.gotmpl",
+    "templateFile": "_templates.gotmpl",
+    "ignoreFile": ".helmdocsignore"
+  },
+  "parameters": [
+    {
+      "name": "common",
+      "valuesFile": "values-excalidraw.yaml",
+      "titleSuffix": "Communes",
+      "rendered": {
+        "file": "helmdocs/RENDERED.yaml"
+      }
+    },
+    {
+      "name": "prp.vdr",
+      "titleSuffix": "Dédiées PRP VDR",
+      "deployBadge": {
+        "badgesUrl": "https://openshift-gitops-server-openshift-gitops.apps.paiprp.620nm.net/api/badge?name=excalidraw",
+        "applicationUrl": "https://openshift-gitops-server-openshift-gitops.apps.paiprp.620nm.net/applications/openshift-gitops/excalidraw"
+      }
+    }
+  ],
+  "section": {
+    "valueTable": {
+      "enable": true,
+      "format": "html",
+      "extraFile": ""
+    },
+    "tableOfContent": {
+      "enable": true
+    },
+    "description": {
+      "enable": true,
+      "extraFile": "helmdocs/DESCRIPTION.md"
+    },
+    "homepageLine": {
+      "enable": false
+    },
+    "maintainersSection": {
+      "enable": true,
+      "extraFile": ""
+    },
+    "sourcesSection": {
+      "enable": false,
+      "extraFile": ""
+    },
+    "requirementsSection": {
+      "enable": false,
+      "extraFile": ""
+    },
+    "install": {
+      "enable": true,
+      "extraFile": "helmdocs/INSTALL.md",
+      "applicationSet": true
+    },
+    "rendered": {
+      "enable": true,
+      "extraFile": "helmdocs/RENDERED.md"
+    },
+    "versionFooter": {
+      "enable": true,
+      "extraFile": ""
+    },
+    "badges": {
+      "enable": true,
+      "deploy": true,
+      "custom": [
+        {
+          "name": "sharedlibraries",
+          "link": "https://git-oab.si.fr.intraorange/equipe-papf/openshift_argocd/library/-/tree/main/sharedlibraries",
+          "image": "https://flat.badgen.net/badge/sharedlibraries/enabled/blue?icon=libraries"
+        },
+        {
+          "name": "precommit",
+          "link": "https://github.com/pre-commit/pre-commit",
+          "image": "https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&style=flat-square"
+        },
+        {
+          "name": "helmdocs",
+          "link": "https://github.com/norwoodj/helm-docs",
+          "image": "https://flat.badgen.net/badge/helm-docs/enabled/pink?icon=https://media.flaticon.com/dist/min/img/landing/gsuite/docs.svg"
+        }
+      ]
+    }
+  }
+}

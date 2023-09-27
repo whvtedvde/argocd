@@ -1,0 +1,1 @@
+{{ include "sharedlibraries.workload_deployment" . }}

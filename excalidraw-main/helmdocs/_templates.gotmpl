@@ -1,0 +1,242 @@
+
+{{- /* Each \template \define in extra is custom \template  */}}
+{{- /* Each \template \define in chart are custom modifitation of already existing \template  */}}
+
+{{- /* \template for stuff   */}}
+{{- /* \DEFINE extra.flower for testing purpose  */}}
+{{- define "extra.flower" -}}
+```
+          ,-.
+ ,     ,-.   ,-.
+/ \   (   )-(   )
+\ |  ,.>-(   )-<
+ \|,' (   )-(   )
+  Y ___`-'   `-'
+  |/__/   `-'
+  |
+  |
+  |    -hi-
+__|_____________
+```
+{{- /* \END \DEFINE extra.flower  */}}
+{{- end -}}
+
+{{- /* \template for badge   */}}
+
+{{- /* \DEFINE extra.customBadge  */}}
+{{- define "extra.customBadge" -}}
+  {{- range $value := . }}
+{{ printf "[![%s](%s)](%s)" $value.name $value.image $value.link }}
+  {{- end }}
+{{- end -}}
+
+
+{{- /* \DEFINE extra.precommitBadge  */}}
+{{- define "extra.precommitBadge" -}}
+[![precommit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&style=flat-square)](https://github.com/pre-commit/pre-commit)
+{{- end -}}
+
+{{- /* \DEFINE extra.sharedlibraryBadge  */}}
+{{- define "extra.sharedlibraryBadge" -}}
+[![sharedlibraries](https://flat.badgen.net/badge/sharedlibraries/enabled/blue?icon=libraries)](https://git-oab.si.fr.intraorange/equipe-papf/openshift_argocd/library/-/tree/main/sharedlibraries)
+{{- end -}}
+
+{{- /* \DEFINE extra.helmdocsBadge  */}}
+{{- define "extra.helmdocsBadge" -}}
+[![helmdocs](https://flat.badgen.net/badge/helm-docs/enabled/pink?icon=https://media.flaticon.com/dist/min/img/landing/gsuite/docs.svg)](https://github.com/norwoodj/helm-docs)
+{{- end -}}
+
+
+{{- /* \DEFINE extra.deployBadgeList  */}}
+{{- define "extra.deployBadgeList" -}}
+  {{- range $value := $.parameters }}
+    {{- if and ( hasKey $value "deployBadge" ) ( $value.deployBadge.badgesUrl ) ( $value.deployBadge.applicationUrl ) }}
+{{ printf "- %s : [![%s](%s)](%s)" $value.name $value.name $value.deployBadge.badgesUrl $value.deployBadge.applicationUrl }}
+    {{- end }}
+  {{- end }}
+{{- end -}}
+
+
+{{- /* \DEFINE extra.deployBadgeTable  */}}
+{{- define "extra.deployBadgeTable" -}}
+{{- $currentHeader := ""  -}}
+{{- $currentValues := ""  -}}
+  {{- range $value := $.parameters }}
+    {{- if and ( hasKey $value "deployBadge" ) ( $value.deployBadge.badgesUrl ) ( $value.deployBadge.applicationUrl ) }}
+{{- $currentHeader = ( printf "%s\n<th>%s</th>" $currentHeader $value.name )  -}}
+{{- $currentValues = ( printf "%s\n<td>[![%s](%s)](%s)</td>" $currentValues $value.name $value.deployBadge.badgesUrl $value.deployBadge.applicationUrl  )  -}}
+    {{- end }}
+  {{- end }}
+<table>
+  <tr>
+{{- $currentHeader }}
+  </tr>
+  <tr>
+{{- $currentValues }}
+  </tr>
+</table>
+{{- end -}}
+
+{{- /* \template for values tables   */}}
+
+{{- /* \template to render Key Column  */}}
+{{- /* render values path \with link to yaml definition \and <wbr> tags html to \wrap  */}}
+
+{{- /* \DEFINE chart.keyColumnRender  */}}
+{{- define "chart.keyColumnRender" -}}
+{{- $key := .Key  -}}
+{{- $lineNumber := .LineNumber  -}}
+{{- $file := ( default "values.yaml" .File ) -}}
+<div id="{{ $key | replace "." "--" }}"><a href="./{{ $file }}#L{{ $lineNumber }}">{{ $key | replace "." ".<wbr>" }}</a></div>
+{{- end -}}
+
+
+{{- /* \template to render Type Column  */}}
+{{- /* \DEFINE chart.typeColumnRender  */}}
+{{- /* render type without modification  */}}
+{{- define "chart.typeColumnRender" -}}
+{{- $type := .Type  -}}
+{{ $type }}
+{{- end -}}
+
+
+{{- /* \template to render mandatory / REQ Column  */}}
+{{- /* \DEFINE chart.mandatoryColumnRender  */}}
+{{- /* render REQ Column TRUE (with emoji) \if value contain '[REQ]'  */}}
+{{- /* render FALSE otherwise  */}}
+{{- define "chart.mandatoryColumnRender" -}}
+  {{- $description := ( default .Description .AutoDescription ) }}
+  {{- if ( contains "[REQ]" $description ) }}{{ print "YES <br> 🟢" }}
+  {{- else if ( contains "[OPT]" $description ) }}{{ print "NO <br> 🔴" }}
+  {{- else }}{{- print "NO <br> 🔴" | trim }}
+  {{- end }}
+{{- end -}}
+
+
+{{- /* \template to render description Column  */}}
+{{- /* \DEFINE chart.descriptionColumnRender  */}}
+{{- define "chart.descriptionColumnRender" -}}
+{{- $description  :=  ( default .Description .AutoDescription | replace "[REQ]" ""  | replace "[OPT]" "" ) -}}
+{{- $description2 := ( $description | replace "DOC" "<br>DOC" ) -}}
+{{- $description3 := ( regexReplaceAll "##.*" $description2 ""  ) -}}
+{{- $description4 := ( $description3 | replace "#" "<br>" ) -}}
+{{- $description5 := ( $description4 | replace " " " <wbr>" | replace "," ",<wbr>" | trim ) -}}
+{{- if not $description5 -}}
+{{- printf "%s" "none" -}}
+{{- else -}}
+{{- printf "%s" $description5 -}}
+{{- end -}}
+{{- end -}}
+
+
+{{- /* \template to render \Default Column  */}}
+{{- /* \DEFINE chart.valueDefaultColumnRender  */}}
+{{- /* render \Default values in collapsable section \if json \and type = dict \or list  */}}
+{{- /* render in pre tags  */}}
+{{- define "chart.valueDefaultColumnRender" }}
+{{- $defaultValue := ( default .Default .AutoDefault )  -}}
+{{- $notationType := ( default "none" .NotationType ) -}}
+{{- $typeFull := ( default "none" .Type ) -}}
+{{- /*  */}}
+  {{- if ( eq $notationType "none" ) }}
+    {{- if (and (hasPrefix "`" $defaultValue) (hasSuffix "`" $defaultValue) ) -}}
+{{- $defaultValue = ( toPrettyJson ( fromJson ( trimAll "`" ( default .Default .AutoDefault ) ) ) ) -}}
+{{- $notationType = "json" }}
+    {{- end -}}
+  {{- end }}
+  {{- /*  */}}
+  {{- if or ( eq $notationType "multilinestring" ) ( eq $notationType "multilinestr" ) }}
+{{- $defaultValue = ( ( trimAll "`" ( default .Default .AutoDefault ) ) | replace "\n" "<br>" )  -}}
+{{ printf "\n<p>\n<details>\n<summary>show</summary>\n\n" }}
+{{ printf "<pre>" }}
+{{ $defaultValue | trim }}
+{{ printf "</pre>" }}
+{{ printf "</details>\n</p>" }}
+  {{- else if ( eq $notationType "tpl" ) }}
+{{ printf "\n<pre lang=\"%s\">" $notationType  }}
+{{ .Key }}: |
+{{- $defaultValue | nindent 2 }}
+{{ printf "</pre>" }}
+  {{- /*  */}}
+  {{- else if ( eq $notationType "json" ) }}
+    {{- if or ( contains "dict"  $typeFull  ) ( contains "list"  $typeFull )  -}}
+{{ printf "\n<p>\n<details>\n<summary>show</summary>\n\n" }}
+```json
+{{ $defaultValue }}
+```
+{{ printf "</details>\n</p>" }}
+    {{- /*  */}}
+    {{- else -}}
+{{ printf "\n<pre>" }}
+{{ $defaultValue }}
+{{ printf "</pre>" }}
+    {{- end -}}
+  {{- /*  */}}
+  {{- else if ( ne $notationType "none" )  }}
+{{ printf "\n<pre lang=\"%s\">" $notationType  }}
+{{ $defaultValue }}
+{{ printf "</pre>" }}
+  {{- /*  */}}
+  {{- else }}
+{{ printf "<pre>" }}
+{{ $defaultValue | trim }}
+{{ printf "</pre>" }}
+  {{- end }}
+{{- end }}
+
+
+{{- /* \template to render html table  */}}
+{{- /* \DEFINE extra.valuesTableHtml  */}}
+{{- define "extra.valuesTableHtml" -}}
+{{- /* width="1000px" height="800px"  */}}
+<table >
+  <thead>
+    <th>Key</th>
+    <th>Type</th>
+    <th>REQ</th>
+    <th>Description</th>
+    <th>Default</th>
+  </thead>
+  <tbody>
+    {{- range .helmdocs.Values }}
+{{- $currentValueClass := ( default "common" $.CurrentValueClass ) -}}
+{{- $CurrentValueFile := ( default "values.yaml" $.CurrentValueFile ) -}}
+{{- $currentKey := .Key -}}
+    {{- if hasPrefix $currentValueClass $currentKey }}
+      {{- $currentValue := dict }}
+      {{- $_ := set $currentValue "Key" ( .Key | replace $currentValueClass ""  | trimPrefix "." ) }}
+      {{- $_ := set $currentValue "LineNumber" .LineNumber }}
+      {{- $_ := set $currentValue "File" $CurrentValueFile }}
+    <tr>
+      <td>
+{{- template "chart.keyColumnRender" $currentValue -}}
+      </td>
+      <td>
+{{- template "chart.typeColumnRender" . -}}
+      </td>
+      <td>
+{{- template "chart.mandatoryColumnRender" . -}}
+      </td>
+      <td>
+{{- template "chart.descriptionColumnRender" . -}}
+      </td>
+      <td>
+{{- template "chart.valueDefaultColumnRender" . }}
+      </td>
+    </tr>
+    {{- end }}
+  {{- end }}
+  </tbody>
+</table>
+{{- /* \END \DEFINE extra.valuesTableHtml  */}}
+{{- end -}}
+
+
+{{- define "extra.blockquote" -}}
+{{- range ( split "\n" . ) }}
+> {{ . }}
+{{- end }}
+{{- end -}}
+
+{{- /* some tips   */}}
+{{- /* - . | mustToPrettyJson | printf "\nThe JSON output of the dumped var is: \n%s" | fail  */}}

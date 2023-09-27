@@ -1,0 +1,210 @@
+# yamllint disable rule:line-length rule:comments-indentation
+---
+common:
+  ### Available helmdocs annotation:
+  ####  # -- (string)[OPT] excalidraw bookmarks config
+  ####  # @default -- excalidraw bookmarks config
+  ####  # @notationType -- multilinestr
+  ####  # DOC : [bookmarks](https://getexcalidraw.dev/en/configs/bookmarks/)
+  # -- (dict)[REQ]  rbac
+  # @ignore
+  rbac:
+    r:
+      -
+        name: r-excalidraw
+        namespace: outils-dmz
+        syncWave: -05
+        additionalLabels:
+          app.kubernetes.io/name: excalidraw
+        rules:
+        - apiGroups:
+            - cert-manager.io
+          resources:
+            - certificates
+          verbs:
+            - "*"
+    rb:
+      -
+        name: rb-sa-gitops-to-excalidraw
+        namespace: outils-dmz
+        syncWave: -04
+        subjects:
+          - kind: ServiceAccount
+            name: openshift-gitops-argocd-application-controller
+            namespace: openshift-gitops
+        roleRef:
+          kind: Role
+          name: r-excalidraw
+          apiGroup: rbac.authorization.k8s.io
+      -
+        name: rb-sa-excalidraw-to-privileged
+        namespace: outils
+        syncWave: -04
+        subjects:
+          - kind: ServiceAccount
+            name: sa-excalidraw
+            namespace: outils
+        roleRef:
+          kind: ClusterRole
+          name: system:openshift:scc:privileged
+          apiGroup: rbac.authorization.k8s.io
+    sa:
+      - name: sa-excalidraw
+        namespace: outils
+        syncWave: -05
+        additionalLabels:
+          app.kubernetes.io/name: excalidraw
+  workload:
+    deployment:
+      -
+        name: workload-deployment-excalidraw
+        namespace: outils
+        syncWave: 01
+        selector:
+          matchLabels:
+            app.kubernetes.io/name: excalidraw
+        template:
+          metadata:
+            labels:
+              app.kubernetes.io/name: excalidraw
+          spec:
+            serviceAccountName: sa-excalidraw
+            containers:
+              - name: excalidraw
+                ports:
+                  - containerPort: 80
+                    protocol: TCP
+                imagePullPolicy: IfNotPresent
+                terminationMessagePolicy: File
+                image: 'excalidraw/excalidraw:latest'
+            securityContext:
+              runAsUser: 0
+            serviceAccount: sa-excalidraw
+  # -- (string)[OPT] excalidraw services
+  # @default -- see subconfig
+  services:
+    -
+      # @ignore
+      name: svc-excalidraw
+      # @ignore
+      namespace: outils
+      # @ignore
+      syncWave: 02
+      # @ignore
+      additionalLabels:
+        app.kubernetes.io/name: excalidraw
+      # @ignore
+      type: ClusterIP
+      # -- (list)[REQ] set ports
+      ports:
+        -
+          # @ignore
+          port: 80
+          # @ignore
+          name: web-excalidraw
+          # @ignore
+          protocol: TCP
+          # @ignore
+          targetPort: 80
+      # -- (dict)[REQ] selector pod
+      selector:
+        # @ignore
+        app.kubernetes.io/name: excalidraw
+  certManager:
+    # -- (string)[OPT] excalidraw certificate
+    # @default -- see subconfig
+    # DOC : [certificate](https://cert-manager.io/docs/concepts/certificate/)
+    certificate:
+      -
+        # -- (string)[REQ] name
+        # @ignore
+        name: certmanager-certificate-excalidraw
+        # @ignore
+        namespace: outils-dmz
+        # @ignore
+        syncWave: 02
+        # -- (string)[REQ] secret to save Certificate
+        secretName: secret-certmanager-certificate-excalidraw
+        # -- (dict)[REQ] Which issuer to used
+        ## Use step cluster issuer with self-hosted StepCA
+        issuerRef:
+          # @ignore
+          name: stepissuer-stepclusterissuer
+          # @ignore
+          group: certmanager.step.sm
+          # @ignore
+          kind: StepClusterIssuer
+        # -- (string)[REQ] Certificate CN
+        commonName: 'excalidraw.outils.paiprp.620nm.net'
+        # -- (string)[REQ] Certificate DNS
+        dnsNames:
+          -
+            # @ignore
+            excalidraw.outils.paiprp.620nm.net
+        # -- (string)[REQ] Certificate IPs
+        ipAddresses:
+          -
+            # @ignore
+            10.222.1.20
+        # -- (string)[REQ] Certificate duration
+        duration: 48h0m0s
+        # -- (dict)[REQ] Certificate Crypto
+        privateKey:
+          # @ignore
+          algorithm: RSA
+          # @ignore
+          rotationPolicy: Always
+          # @ignore
+          size: 4096
+        # -- (string)[REQ] Certificate Renew before expiration
+        renewBefore: 8h0m0s
+  traefik:
+    # -- (string)[OPT] excalidraw Traefik ingressRoute
+    # @default -- see subconfig
+    # DOC : [Traefik](https://doc.traefik.io/traefik/routing/providers/kubernetes-crd/)
+    ingressRoute:
+      -
+        # @ignore
+        name: traefik-ingressroute-excalidraw
+        # @ignore
+        namespace: outils-dmz
+        additionalAnnotations:
+          # -- (string)[OPT] Annotation to set which traefik ingress to use
+          kubernetes.io/ingress.class: traefik-outils-dmz
+          gethomepage.dev/group: Outils PAPF
+          gethomepage.dev/enabled: 'true'
+          gethomepage.dev/icon: excalidraw.svg
+          gethomepage.dev/description: excalidraw
+          gethomepage.dev/name: excalidraw
+          gethomepage.dev/href: 'https://excalidraw.outils.paiprp.620nm.net/'
+        syncWave: 03
+        # -- (dict)[REQ] entryPoints
+        ## Get traffic via HTTPS
+        entryPoints:
+          - websecure
+        routes:
+          -
+            # @ignore
+            kind: Rule
+            # -- (string)[OPT] Which parameter take care of flow
+            match: Host(`excalidraw.outils.paiprp.620nm.net`)
+            # -- (list)[REQ] Backend config
+            services:
+              -
+                # @ignore
+                kind: Service
+                # @ignore
+                name: svc-excalidraw
+                # @ignore
+                namespace: outils
+                # @ignore
+                passHostHeader: true
+                # @ignore
+                port: 80
+                # @ignore
+                scheme: http
+        # -- (dict)[OPT] Get Cert-Manager TLS certificate from secret
+        tls:
+          # @ignore
+          secretName: secret-certmanager-certificate-excalidraw
+...

@@ -1,0 +1,34 @@
+# yamllint disable rule:line-length rule:comments-indentation
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: appset-excalidraw
+  namespace: openshift-gitops
+spec:
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            env: prp
+            dc: vdr
+        values:
+          clustername: prp-vdr
+          applicationname: excalidraw
+  template:
+    metadata:
+      name: '{{values.applicationname}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://git-oab.si.fr.intraorange/equipe-papf/openshift_argocd/cluster-ops/excalidraw.git
+        targetRevision: HEAD
+        path: .
+        helm:
+          ignoreMissingValueFiles: true
+          valueFiles:
+            - values-{{values.applicationname}}.yaml  # Simple instance default values
+            - values-{{values.applicationname}}-{{values.clustername}}.yaml  # Simple instance values for one cluster
+      destination:
+        server: '{{server}}'
+...

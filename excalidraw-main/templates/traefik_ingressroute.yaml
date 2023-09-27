@@ -1,0 +1,1 @@
+{{ include "sharedlibraries.traefik_ingressroute" . }}

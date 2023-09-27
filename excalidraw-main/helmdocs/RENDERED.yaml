@@ -1,0 +1,216 @@
+# yamllint disable rule:line-length rule:comments-indentation
+---
+# Source: excalidraw/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sa-excalidraw
+  namespace: outils
+  labels:
+    release: release-name
+    heritage: Helm
+    app.kubernetes.io/name: excalidraw
+  annotations:
+    argocd.argoproj.io/sync-wave: '-5'
+    argocd.argoproj.io/managed: "true"
+    argocd.argoproj.io/application-name: release-name
+...
+---
+# Source: excalidraw/templates/role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: r-excalidraw
+  namespace: outils-dmz
+  labels:
+    release: release-name
+    heritage: Helm
+    app.kubernetes.io/name: excalidraw
+  annotations:
+    argocd.argoproj.io/sync-wave: '-5'
+    argocd.argoproj.io/managed: "true"
+    argocd.argoproj.io/application-name: release-name
+rules:
+  - apiGroups:
+    - cert-manager.io
+    resources:
+    - certificates
+    verbs:
+    - '*'
+...
+---
+# Source: excalidraw/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rb-sa-gitops-to-excalidraw
+  namespace: outils-dmz
+  labels:
+    release: release-name
+    heritage: Helm
+  annotations:
+    argocd.argoproj.io/sync-wave: '-4'
+    argocd.argoproj.io/managed: "true"
+    argocd.argoproj.io/application-name: release-name
+subjects:
+  - kind: ServiceAccount
+    name: openshift-gitops-argocd-application-controller
+    namespace: openshift-gitops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: r-excalidraw
+...
+---
+# Source: excalidraw/templates/rolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rb-sa-excalidraw-to-privileged
+  namespace: outils
+  labels:
+    release: release-name
+    heritage: Helm
+  annotations:
+    argocd.argoproj.io/sync-wave: '-4'
+    argocd.argoproj.io/managed: "true"
+    argocd.argoproj.io/application-name: release-name
+subjects:
+  - kind: ServiceAccount
+    name: sa-excalidraw
+    namespace: outils
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:privileged
+...
+---
+# Source: excalidraw/templates/services.yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: svc-excalidraw
+  namespace: outils
+  labels:
+    release: release-name
+    heritage: Helm
+    app.kubernetes.io/name: excalidraw
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+    argocd.argoproj.io/managed: "true"
+    argocd.argoproj.io/application-name: release-name
+spec:
+  type: ClusterIP
+  ports:
+    - name: web-excalidraw
+      port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app.kubernetes.io/name: excalidraw
+...
+---
+# Source: excalidraw/templates/workload_deployment.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workload-deployment-excalidraw
+  namespace: outils
+  labels:
+    release: release-name
+    heritage: Helm
+  annotations:
+    argocd.argoproj.io/sync-wave: '1'
+    argocd.argoproj.io/managed: "true"
+    argocd.argoproj.io/application-name: release-name
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: excalidraw
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: excalidraw
+    spec:
+      containers:
+      - image: excalidraw/excalidraw:latest
+        imagePullPolicy: IfNotPresent
+        name: excalidraw
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        terminationMessagePolicy: File
+      securityContext:
+        runAsUser: 0
+      serviceAccount: sa-excalidraw
+      serviceAccountName: sa-excalidraw
+...
+---
+# Source: excalidraw/templates/certmanager_certificate.yaml
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: certmanager-certificate-excalidraw
+  namespace: outils-dmz
+  labels:
+    release: release-name
+    heritage: Helm
+  annotations:
+    argocd.argoproj.io/sync-wave: '2'
+    argocd.argoproj.io/managed: "true"
+    argocd.argoproj.io/application-name: release-name
+spec:
+  secretName: secret-certmanager-certificate-excalidraw
+  issuerRef:
+    name: stepissuer-stepclusterissuer
+    group: certmanager.step.sm
+    kind: StepClusterIssuer
+  commonName: excalidraw.outils.paiprp.620nm.net
+  dnsNames:
+  - excalidraw.outils.paiprp.620nm.net
+  duration: 48h0m0s
+  ipAddresses:
+  - 10.222.1.20
+  privateKey:
+    algorithm: RSA
+    rotationPolicy: Always
+    size: 4096
+  renewBefore: 8h0m0s
+...
+---
+# Source: excalidraw/templates/traefik_ingressroute.yaml
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-ingressroute-excalidraw
+  namespace: outils-dmz
+  labels:
+    release: release-name
+    heritage: Helm
+  annotations:
+    argocd.argoproj.io/sync-wave: '3'
+    argocd.argoproj.io/managed: "true"
+    argocd.argoproj.io/application-name: release-name
+    gethomepage.dev/description: excalidraw
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/group: Outils PAPF
+    gethomepage.dev/href: https://excalidraw.outils.paiprp.620nm.net/
+    gethomepage.dev/icon: excalidraw.svg
+    gethomepage.dev/name: excalidraw
+    kubernetes.io/ingress.class: traefik-outils-dmz
+spec:
+  tls:
+    secretName: secret-certmanager-certificate-excalidraw
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`excalidraw.outils.paiprp.620nm.net`)
+      services:
+        - kind: Service
+          name: svc-excalidraw
+          namespace: outils
+          passHostHeader: true
+          port: 80
+          scheme: http
+...

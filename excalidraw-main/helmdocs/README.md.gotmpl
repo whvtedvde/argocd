@@ -1,0 +1,189 @@
+{{- /*  Helmdocs Readme */}}
+
+{{- /* Debug Function */}}
+{{- /* - . | mustToPrettyJson | printf "\nThe JSON output of the dumped var is: \n%s" | fail */}}
+
+{{- /* read config */}}
+{{- $helmdocsConfig := fromJson ( .Files.Get "helmdocs/helmdocs-config.json" ) }}
+
+
+{{- /* header */}}
+{{ template "chart.header" . }}
+
+{{- /* deprecationWarning */}}
+{{ template "chart.deprecationWarning" . }}
+
+{{- /* Badge */}}
+{{- if $helmdocsConfig.section.badges.enable }}
+{{ template "chart.versionBadge" . }}
+{{ template "chart.typeBadge" . }}
+{{ template "chart.appVersionBadge" . }}
+{{ printf "<br>" }}
+  {{- if $helmdocsConfig.section.badges.custom }}
+{{- template "extra.customBadge" $helmdocsConfig.section.badges.custom }}
+  {{- end }}
+  {{- if $helmdocsConfig.section.badges.deploy }}
+{{ printf "<br>\n## Deployed ON :\n" }}
+{{ template "extra.deployBadgeList" $helmdocsConfig }}
+  {{- end }}
+{{- end }}
+{{ printf "\n________________\n" }}
+
+{{- /* description */}}
+{{- if $helmdocsConfig.section.description.enable }}
+{{- $fullDescription := .Description }}
+  {{- if $helmdocsConfig.section.description.extraFile }}
+    {{- $currentFile := ( default "helmdocs/DESCRIPTION.md" $helmdocsConfig.section.description.extraFile ) -}}
+    {{- $currentFileContent := ( .Files.Get $currentFile ) -}}
+    {{- $fullDescription = ( printf "%s\n\n%s" $fullDescription $currentFileContent ) }}
+  {{- end }}
+{{ printf "\n" }}
+{{ template "extra.blockquote" $fullDescription  }}
+{{ printf "\n" }}
+{{- end }}
+
+{{- /* homepageLine */}}
+{{- if $helmdocsConfig.section.homepageLine.enable }}
+{{ template "chart.homepageLine" . }}
+{{ printf "\n" }}
+{{- end }}
+
+{{- /* tableOfContent */}}
+{{- if $helmdocsConfig.section.tableOfContent.enable }}
+{{ printf "\n## Table Of Content\n\n%s%s_TOC_%s%s \n" "[" "[" "]" "]" }}
+{{- end }}
+
+{{- /* maintainersSection */}}
+{{- if $helmdocsConfig.section.maintainersSection.enable }}
+{{ template "chart.maintainersSection" . }}
+  {{- if $helmdocsConfig.section.maintainersSection.extraFile }}
+    {{- $currentFile := ( default "helmdocs/MAINTAINERS.md" $helmdocsConfig.section.maintainersSection.extraFile ) -}}
+    {{- $currentFileContent := ( .Files.Get $currentFile ) -}}
+    {{- if $currentFileContent }}
+{{ printf "\n## Extra Maintainers\n%s\n" $currentFileContent }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- /* sourcesSection */}}
+{{- if $helmdocsConfig.section.sourcesSection.enable }}
+{{ template "chart.sourcesSection" . }}
+  {{- if $helmdocsConfig.section.sourcesSection.extraFile }}
+    {{- $currentFile := ( default "helmdocs/SOURCES.md" $helmdocsConfig.section.sourcesSection.extraFile ) -}}
+    {{- $currentFileContent := ( .Files.Get $currentFile ) -}}
+    {{- if $currentFileContent }}
+{{ printf "\n## Extra Sources\n%s\n" $currentFileContent }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- /* requirementsSection */}}
+{{- if $helmdocsConfig.section.requirementsSection.enable }}
+{{ template "chart.requirementsSection" . }}
+  {{- if $helmdocsConfig.section.requirementsSection.extraFile }}
+    {{- $currentFile := ( default "helmdocs/REQUIREMENTS.md" $helmdocsConfig.section.requirementsSection.extraFile ) -}}
+    {{- $currentFileContent := ( .Files.Get $currentFile ) -}}
+    {{- if $currentFileContent }}
+{{ printf "\n## Extra Requirements\n%s\n" $currentFileContent }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+
+{{- /* install */}}
+{{- if ( $helmdocsConfig.section.install.enable ) }}
+  {{- if ( $helmdocsConfig.section.install.extraFile ) }}
+    {{- $currentFile := ( default "helmdocs/INSTALL.md" $helmdocsConfig.section.install.extraFile ) -}}
+    {{- $currentFileContent := ( .Files.Get $currentFile ) -}}
+    {{- if $currentFileContent }}
+{{ printf "\n## Installation\n%s\n" $currentFileContent }}
+    {{- end }}
+  {{- if ( $helmdocsConfig.section.install.applicationSet ) }}
+    {{- $currentFile := "ApplicationSet.yaml" -}}
+    {{- $currentFileContent := ( .Files.Get $currentFile ) -}}
+    {{- if $currentFileContent }}
+{{ printf "\n### ApplicationSet file\n" }}
+{{ printf "\n<details><summary>show</summary>\n" }}
+```yml
+{{ $currentFileContent  }}
+```
+{{ printf "\n</details>\n" }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+{{- end }}
+
+
+{{- /* valueTable */}}
+{{- if $helmdocsConfig.section.valueTable.enable }}
+  {{- if $helmdocsConfig.section.valueTable.extraFile }}
+    {{- $currentFile := ( default "helmdocs/VALUETABLE.md" $helmdocsConfig.section.valueTable.extraFile ) -}}
+    {{- $currentFileContent := ( .Files.Get $currentFile ) -}}
+    {{- if $currentFileContent }}
+{{ printf "\n## Extra Values\n%s\n" $currentFileContent }}
+    {{- end }}
+  {{- end }}
+  {{- $valueTableFormat := ( default "markdown" $helmdocsConfig.section.valueTable.format ) -}}
+  {{- range $value := $helmdocsConfig.parameters }}
+    {{- if and ( hasKey $value "valuesFile" ) ( $value.valuesFile ) }}
+{{ printf "\n%s%s" "## Values " $value.titleSuffix }}
+      {{- $currentParameter := dict }}
+      {{- $_ := set $currentParameter "CurrentValueClass" $value.name }}
+      {{- $_ := set $currentParameter "CurrentValueFile" $value.valuesFile }}
+      {{- $_ := set $currentParameter "helmdocs" $ }}
+      {{- if eq $valueTableFormat "html" }}
+{{ printf "\n" }}
+{{ template "extra.valuesTableHtml" $currentParameter }}
+{{ printf "\n" }}
+      {{- else if eq $valueTableFormat "markdown"  }}
+{{ printf "\n" }}
+{{ template "extra.valueTable" $currentParameter }}
+{{ printf "\n" }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+
+{{- /* rendered */}}
+{{- if $helmdocsConfig.section.rendered.enable }}
+  {{- if $helmdocsConfig.section.rendered.extraFile }}
+{{ printf "\n## Extra Rendered\n" }}
+    {{- $currentFile := ( default "helmdocs/RENDERED.md" $helmdocsConfig.section.rendered.extraFile ) -}}
+    {{- $currentFileContent := ( .Files.Get $currentFile ) -}}
+    {{- if $currentFileContent }}
+{{ $currentFileContent }}
+    {{- end }}
+  {{- end }}
+{{- $files := .Files }}
+  {{- range $helmdocsConfig.parameters }}
+    {{- if and ( hasKey . "rendered" ) ( hasKey .rendered "file" ) ( .rendered.file ) }}
+{{ printf "\n## Rendered %s : \n" .titleSuffix }}
+      {{- $currentFileContent := ( $files.Get .rendered.file ) -}}
+      {{- if $currentFileContent }}
+{{ printf "\n<details><summary>show</summary>\n\n" }}
+```yml
+{{ $currentFileContent  }}
+```
+{{ printf "\n\n</details>\n" }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+
+{{- /* versionFooter */}}
+{{- /* if $helmdocsConfig.section.versionFooter.enable */}}
+{{- if $helmdocsConfig.section.versionFooter.enable }}
+{{ template "helm-docs.versionFooter" . }}
+  {{- if $helmdocsConfig.section.versionFooter.extraFile }}
+    {{- $currentFile := ( default "helmdocs/VERSIONFOOTER.md" $helmdocsConfig.section.versionFooter.extraFile ) -}}
+    {{- $currentFileContent := ( .Files.Get $currentFile ) -}}
+    {{- if $currentFileContent }}
+{{ printf "\n## Extra Version Footer\n %s \n" $currentFileContent }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- /* some tips  */}}
+{{- /* - . \| mustToPrettyJson | \printf "\nThe JSON output of the dumped var is: \n%s" \| \fail */}}

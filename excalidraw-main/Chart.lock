@@ -1,0 +1,6 @@
+dependencies:
+- name: helm-sharedlibraries
+  repository: https://multirepo-oab.si.fr.intraorange/artifactory/helm-EQUIPE_PAPF
+  version: 1.0.9
+digest: sha256:76ec532a24381bd49805626690652c92b1b394a154ae7b654d944c17c9820f96
+generated: "2023-06-15T10:17:51.6302183+02:00"
