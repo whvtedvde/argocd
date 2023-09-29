@@ -1,27 +1,38 @@
 # yamllint disable rule:line-length rule:comments-indentation
----
 apiVersion: argoproj.io/v1alpha1
-kind: Application
+kind: ApplicationSet
 metadata:
-  name: apptest
+  name: apptest-set
   namespace: argocd
 spec:
-  project: default
-  source:
-    repoURL: https://github.com/whvtedvde/argocd.git
-    targetRevision: HEAD
-    path: test
-    helm:
+  generators:
+  - list:
+      elements:
+      - name: apptest
+        repoURL: https://github.com/whvtedvde/argocd.git
+        targetRevision: HEAD
+        path: test
+        valueFiles: values.yaml
+
+  template:
+    metadata:
+      name: '{{name}}'
+    spec:
+      project: default
+      source:
+        repoURL: '{{repoURL}}'
+        targetRevision: '{{targetRevision}}'
+        path: '{{path}}'
+        helm:
           ignoreMissingValueFiles: true
           valueFiles:
-            - values.yaml
-
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: myapp
-  syncPolicy:
-    syncOptions:
-    - CreateNamespace=true
-    automated:
-      selfHeal: true
-      prune: true
+            - '{{valueFiles}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: myapp
+      syncPolicy:
+        syncOptions:
+        - CreateNamespace=true
+        automated:
+          selfHeal: true
+          prune: true
