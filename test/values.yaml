@@ -1,0 +1,16 @@
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 80
+
+configmap:
+  indexContent: |
+    <html>
+    <head>
+        <title>Welcome to Nginx!</title>
+    </head>
+    <body>
+        <h1>Hello, nedir!</h1>
+    </body>
+    </html>
